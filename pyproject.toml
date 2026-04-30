@@ -1,0 +1,12 @@
+[project]
+name = "image-dataset-manager"
+version = "0.1.0"
+description = "A PySide6 desktop app for managing image datasets."
+requires-python = ">=3.11"
+dependencies = [
+    "PySide6>=6.7.0",
+    "Pillow>=10.0.0",
+]
+
+[project.scripts]
+image-dataset-manager = "image_dataset_manager.main:main"
