@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QCheckBox,
     QSplitter,
     QStackedWidget,
     QVBoxLayout,
@@ -123,6 +124,8 @@ class MainWindow(QMainWindow):
         browse_export_button.clicked.connect(self._browse_export_directory)
         clear_export_button = QPushButton("Clear Export")
         clear_export_button.clicked.connect(self._clear_export_directory)
+        self.dark_theme_check = QCheckBox("Dark Theme")
+        self.dark_theme_check.stateChanged.connect(self._toggle_dark_theme)
 
         layout.addWidget(settings_label)
         layout.addWidget(self.master_combo)
@@ -135,6 +138,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.export_edit)
         layout.addWidget(browse_export_button)
         layout.addWidget(clear_export_button)
+        layout.addWidget(self.dark_theme_check)
         layout.addSpacing(12)
         layout.addWidget(label)
         layout.addWidget(self.tag_list, stretch=1)
@@ -265,6 +269,9 @@ class MainWindow(QMainWindow):
 
         export_directory = self.controller.export_directory()
         self.export_edit.setText(str(export_directory) if export_directory else "")
+        self.dark_theme_check.blockSignals(True)
+        self.dark_theme_check.setChecked(self.controller.dark_theme())
+        self.dark_theme_check.blockSignals(False)
         self._update_space_bar()
 
     def _browse_master_directory(self) -> None:
@@ -303,6 +310,10 @@ class MainWindow(QMainWindow):
         self.controller.set_export_directory(None)
         self._reload_settings_controls()
 
+    def _toggle_dark_theme(self) -> None:
+        self.controller.set_dark_theme(self.dark_theme_check.isChecked())
+        self._apply_styles()
+
     def _update_space_bar(self) -> None:
         try:
             usage = self.controller.disk_usage()
@@ -319,6 +330,88 @@ class MainWindow(QMainWindow):
         )
 
     def _apply_styles(self) -> None:
+        if self.controller.dark_theme():
+            self.setStyleSheet(
+                """
+            QMainWindow, QWidget {
+                background: #111827;
+                color: #e5e7eb;
+                font-family: Segoe UI, Arial, sans-serif;
+                font-size: 10pt;
+            }
+            QPushButton {
+                background: #3b82f6;
+                border: 0;
+                border-radius: 6px;
+                color: white;
+                padding: 8px 12px;
+            }
+            QPushButton:hover {
+                background: #2563eb;
+            }
+            #topBar {
+                background: #1f2937;
+                border-bottom: 1px solid #374151;
+            }
+            #sidebar {
+                background: #172033;
+                border-right: 1px solid #374151;
+            }
+            #appTitle, #detailTitle {
+                font-size: 18pt;
+                font-weight: 650;
+            }
+            #sectionLabel {
+                font-weight: 650;
+            }
+            #mutedLabel, #detailTags {
+                color: #aeb8c8;
+            }
+            #imageCard {
+                background: #1f2937;
+                border: 1px solid #374151;
+                border-radius: 8px;
+            }
+            #imageCard:hover {
+                border-color: #60a5fa;
+            }
+            #thumbnail {
+                background: #111827;
+                border-radius: 6px;
+                color: #9ca3af;
+            }
+            #cardTitle {
+                font-weight: 600;
+            }
+            #errorLabel {
+                color: #fca5a5;
+            }
+            QListWidget, QLineEdit, QComboBox {
+                background: #111827;
+                border: 1px solid #4b5563;
+                border-radius: 5px;
+                padding: 7px;
+                color: #e5e7eb;
+            }
+            QProgressBar {
+                background: #111827;
+                border: 1px solid #4b5563;
+                border-radius: 5px;
+                height: 18px;
+                text-align: center;
+                color: #e5e7eb;
+            }
+            QProgressBar::chunk {
+                background: #3b82f6;
+                border-radius: 4px;
+            }
+            QCheckBox {
+                spacing: 8px;
+            }
+            """
+            )
+            return
+
         self.setStyleSheet(
             """
             QMainWindow, QWidget {

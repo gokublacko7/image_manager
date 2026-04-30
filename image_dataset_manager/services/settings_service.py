@@ -10,6 +10,7 @@ class AppSettings:
     current_master_directory: Path
     master_directories: list[Path]
     export_directory: Path | None
+    dark_theme: bool = False
 
 
 class SettingsService:
@@ -37,11 +38,16 @@ class SettingsService:
         self._settings.export_directory = directory
         self.save()
 
+    def set_dark_theme(self, enabled: bool) -> None:
+        self._settings.dark_theme = enabled
+        self.save()
+
     def save(self) -> None:
         payload = {
             "current_master_directory": str(self._settings.current_master_directory),
             "master_directories": [str(path) for path in self._settings.master_directories],
             "export_directory": str(self._settings.export_directory) if self._settings.export_directory else "",
+            "dark_theme": self._settings.dark_theme,
         }
         self.settings_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
@@ -50,6 +56,7 @@ class SettingsService:
             current_master_directory=MASTER_DATASET_DIR,
             master_directories=[MASTER_DATASET_DIR],
             export_directory=None,
+            dark_theme=False,
         )
         if not self.settings_path.exists():
             return default
@@ -72,6 +79,7 @@ class SettingsService:
             current_master_directory=current,
             master_directories=_dedupe_paths([current, *master_directories, MASTER_DATASET_DIR]),
             export_directory=export_directory,
+            dark_theme=bool(payload.get("dark_theme", False)),
         )
 
 

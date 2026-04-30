@@ -75,6 +75,12 @@ class DatasetController:
     def set_export_directory(self, directory: Path | None) -> None:
         self.settings_service.set_export_directory(directory)
 
+    def dark_theme(self) -> bool:
+        return self.settings_service.settings.dark_theme
+
+    def set_dark_theme(self, enabled: bool) -> None:
+        self.settings_service.set_dark_theme(enabled)
+
     def set_master_directory(self, directory: Path) -> None:
         self.settings_service.set_current_master_directory(directory)
         self.storage_service.set_master_directory(directory)
