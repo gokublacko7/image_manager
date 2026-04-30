@@ -2,14 +2,17 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QComboBox,
     QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QSplitter,
     QStackedWidget,
@@ -96,12 +99,50 @@ class MainWindow(QMainWindow):
         self.tag_list = QListWidget()
         self.tag_list.itemChanged.connect(self._reload_datasets)
 
+        settings_label = QLabel("Storage")
+        settings_label.setObjectName("sectionLabel")
+        self.master_combo = QComboBox()
+        self.master_combo.setEditable(True)
+        self.master_combo.activated.connect(self._apply_master_from_field)
+        browse_master_button = QPushButton("Browse Master")
+        browse_master_button.clicked.connect(self._browse_master_directory)
+        apply_master_button = QPushButton("Apply Master")
+        apply_master_button.clicked.connect(self._apply_master_from_field)
+
+        self.space_bar = QProgressBar()
+        self.space_bar.setRange(0, 100)
+        self.space_label = QLabel()
+        self.space_label.setObjectName("mutedLabel")
+        self.space_label.setWordWrap(True)
+
+        export_label = QLabel("Export Folder")
+        export_label.setObjectName("sectionLabel")
+        self.export_edit = QLineEdit()
+        self.export_edit.setPlaceholderText("Ask every export")
+        browse_export_button = QPushButton("Browse Export")
+        browse_export_button.clicked.connect(self._browse_export_directory)
+        clear_export_button = QPushButton("Clear Export")
+        clear_export_button.clicked.connect(self._clear_export_directory)
+
+        layout.addWidget(settings_label)
+        layout.addWidget(self.master_combo)
+        layout.addWidget(browse_master_button)
+        layout.addWidget(apply_master_button)
+        layout.addWidget(self.space_bar)
+        layout.addWidget(self.space_label)
+        layout.addSpacing(8)
+        layout.addWidget(export_label)
+        layout.addWidget(self.export_edit)
+        layout.addWidget(browse_export_button)
+        layout.addWidget(clear_export_button)
+        layout.addSpacing(12)
         layout.addWidget(label)
         layout.addWidget(self.tag_list, stretch=1)
         layout.addWidget(self.clear_filters_button)
         return sidebar
 
     def _reload_everything(self) -> None:
+        self._reload_settings_controls()
         selected_tags = self._selected_tags()
         self.tag_list.blockSignals(True)
         self.tag_list.clear()
@@ -141,6 +182,11 @@ class MainWindow(QMainWindow):
         self._reload_datasets()
 
     def _import_dataset(self) -> None:
+        if hasattr(self, "master_combo") and not self.master_combo.currentText().strip():
+            self._browse_master_directory()
+            if not self.master_combo.currentText().strip():
+                return
+
         dialog = ImportDatasetDialog(self)
         if not dialog.exec():
             return
@@ -165,10 +211,24 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Export Datasets", "Select one or more datasets first.")
             return
 
+        typed_export = self.export_edit.text().strip() if hasattr(self, "export_edit") else ""
+        if typed_export:
+            try:
+                self.controller.set_export_directory(Path(typed_export))
+            except Exception as error:
+                QMessageBox.critical(self, "Export Folder", str(error))
+                return
+
+        export_directory = self.controller.export_directory()
+        suggested_path = (
+            export_directory / "datasets.zip"
+            if export_directory
+            else Path.home() / "datasets.zip"
+        )
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Export Selected Datasets",
-            str(Path.home() / "datasets.zip"),
+            str(suggested_path),
             "ZIP files (*.zip)",
         )
         if not path:
@@ -181,6 +241,8 @@ class MainWindow(QMainWindow):
         except Exception as error:
             QMessageBox.critical(self, "Export Failed", str(error))
             return
+        self.controller.set_export_directory(zip_path.parent)
+        self._reload_settings_controls()
         QMessageBox.information(self, "Export Complete", f"Exported {len(selected)} dataset(s).")
 
     def _update_selection_label(self) -> None:
@@ -188,6 +250,73 @@ class MainWindow(QMainWindow):
             return
         count = len(self.dataset_grid.selected_items())
         self.selection_label.setText(f"{count} selected" if count else "No datasets selected")
+
+    def _reload_settings_controls(self) -> None:
+        if not hasattr(self, "master_combo"):
+            return
+
+        current = self.controller.current_master_directory()
+        self.master_combo.blockSignals(True)
+        self.master_combo.clear()
+        for directory in self.controller.master_directories():
+            self.master_combo.addItem(str(directory))
+        self.master_combo.setCurrentText(str(current))
+        self.master_combo.blockSignals(False)
+
+        export_directory = self.controller.export_directory()
+        self.export_edit.setText(str(export_directory) if export_directory else "")
+        self._update_space_bar()
+
+    def _browse_master_directory(self) -> None:
+        folder = QFileDialog.getExistingDirectory(
+            self,
+            "Select Master Dataset Folder",
+            str(self.controller.current_master_directory()),
+        )
+        if folder:
+            self._set_master_directory(Path(folder))
+
+    def _apply_master_from_field(self) -> None:
+        value = self.master_combo.currentText().strip()
+        if not value:
+            self._browse_master_directory()
+            return
+        self._set_master_directory(Path(value))
+
+    def _set_master_directory(self, directory: Path) -> None:
+        try:
+            self.controller.set_master_directory(directory)
+        except Exception as error:
+            QMessageBox.critical(self, "Master Folder", str(error))
+            return
+        self.stack.setCurrentWidget(self.main_page)
+        self._reload_everything()
+
+    def _browse_export_directory(self) -> None:
+        start = self.export_edit.text().strip() or str(Path.home())
+        folder = QFileDialog.getExistingDirectory(self, "Select Export Folder", start)
+        if folder:
+            self.controller.set_export_directory(Path(folder))
+            self._reload_settings_controls()
+
+    def _clear_export_directory(self) -> None:
+        self.controller.set_export_directory(None)
+        self._reload_settings_controls()
+
+    def _update_space_bar(self) -> None:
+        try:
+            usage = self.controller.disk_usage()
+        except OSError:
+            self.space_bar.setValue(0)
+            self.space_label.setText("Space unavailable")
+            return
+
+        used_percent = int((usage.used / usage.total) * 100) if usage.total else 0
+        self.space_bar.setValue(used_percent)
+        self.space_bar.setFormat(f"{used_percent}% used")
+        self.space_label.setText(
+            f"{_format_bytes(usage.free)} free of {_format_bytes(usage.total)}"
+        )
 
     def _apply_styles(self) -> None:
         self.setStyleSheet(
@@ -257,5 +386,31 @@ class MainWindow(QMainWindow):
                 border-radius: 5px;
                 padding: 7px;
             }
+            QComboBox {
+                background: white;
+                border: 1px solid #c9d1dc;
+                border-radius: 5px;
+                padding: 6px;
+            }
+            QProgressBar {
+                background: white;
+                border: 1px solid #c9d1dc;
+                border-radius: 5px;
+                height: 18px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background: #2f6fed;
+                border-radius: 4px;
+            }
             """
         )
+
+
+def _format_bytes(value: int) -> str:
+    units = ["B", "KB", "MB", "GB", "TB"]
+    size = float(value)
+    for unit in units:
+        if size < 1024 or unit == units[-1]:
+            return f"{size:.1f} {unit}"
+        size /= 1024

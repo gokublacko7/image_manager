@@ -12,6 +12,11 @@ class DatasetRepository:
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
 
+    def switch_database(self, database_path: Path) -> None:
+        self.database_path = database_path
+        self.database_path.parent.mkdir(parents=True, exist_ok=True)
+        self._initialize()
+
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.database_path)
         connection.row_factory = sqlite3.Row

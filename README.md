@@ -29,7 +29,10 @@ Runtime data is created under:
 %USERPROFILE%\.image_dataset_manager\
   datasets\               # Master dataset storage
   datasets.sqlite3        # Metadata database
+  settings.json           # Master/export folder preferences
 ```
+
+Custom master folders are supported from the app sidebar. Each custom master folder stores its own metadata database named `.image_manager.sqlite3`, so switching master folders refreshes the app to that folder's datasets and tags.
 
 ## Run
 
@@ -40,6 +43,12 @@ pip install -r requirements.txt
 python -m image_dataset_manager.main
 ```
 
+On this machine you can also double-click:
+
+```text
+run_app.bat
+```
+
 ## Features
 
 - Import a folder of images into managed storage.
@@ -48,4 +57,6 @@ python -m image_dataset_manager.main
 - Filter datasets by tags.
 - Open a dataset to view all images, filenames, tags, and edit tags.
 - Select one or more datasets and export them as a ZIP preserving one folder per dataset.
+- Choose and remember master dataset folders and a default export folder.
+- Show remaining disk space for the selected master folder.
 - Uses RGB thumbnails for previews and loads thumbnails incrementally through a shared grid component.

@@ -17,6 +17,14 @@ class StorageService:
         self.master_directory = master_directory
         self.master_directory.mkdir(parents=True, exist_ok=True)
 
+    def set_master_directory(self, master_directory: Path) -> None:
+        self.master_directory = master_directory
+        self.master_directory.mkdir(parents=True, exist_ok=True)
+
+    def disk_usage(self) -> shutil._ntuple_diskusage:
+        self.master_directory.mkdir(parents=True, exist_ok=True)
+        return shutil.disk_usage(self.master_directory)
+
     def import_dataset(self, source_folder: Path) -> Path:
         if not source_folder.exists() or not source_folder.is_dir():
             raise ValueError("Selected path is not a folder.")
