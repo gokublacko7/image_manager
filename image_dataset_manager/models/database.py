@@ -92,6 +92,12 @@ class DatasetRepository:
             with connection:
                 self._replace_tags(connection, dataset_id, normalize_tags(tags))
 
+    def delete_dataset(self, dataset_id: int) -> None:
+        with closing(self._connect()) as connection:
+            with connection:
+                connection.execute("DELETE FROM datasets WHERE id = ?", (dataset_id,))
+                connection.execute("DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM dataset_tags)")
+
     def all_tags(self) -> list[str]:
         with closing(self._connect()) as connection:
             rows = connection.execute("SELECT name FROM tags ORDER BY name COLLATE NOCASE").fetchall()

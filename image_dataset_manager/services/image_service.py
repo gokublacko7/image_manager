@@ -23,11 +23,12 @@ class ImageService:
         images = self.list_images(folder_path)
         return images[0] if images else None
 
-    def pixmap_for_image(self, image_path: Path, size: int = THUMBNAIL_SIZE) -> QPixmap:
+    def pixmap_for_image(self, image_path: Path, size: int | None = THUMBNAIL_SIZE) -> QPixmap:
         try:
             with Image.open(image_path) as image:
                 image = ImageOps.exif_transpose(image).convert("RGB")
-                image.thumbnail((size, size), Image.Resampling.LANCZOS)
+                if size is not None:
+                    image.thumbnail((size, size), Image.Resampling.LANCZOS)
                 qimage = QImage(
                     image.tobytes("raw", "RGB"),
                     image.width,

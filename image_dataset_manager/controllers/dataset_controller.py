@@ -63,6 +63,21 @@ class DatasetController:
         datasets = [dataset for dataset_id in dataset_ids if (dataset := self.repository.get_dataset(dataset_id))]
         self.storage_service.export_datasets(datasets, zip_path)
 
+    def delete_datasets(self, dataset_ids: list[int]) -> None:
+        for dataset_id in dataset_ids:
+            dataset = self.repository.get_dataset(dataset_id)
+            if dataset is None:
+                continue
+            self.storage_service.delete_dataset_folder(dataset.folder_path)
+            self.repository.delete_dataset(dataset_id)
+
+    def delete_images(self, image_paths: list[Path]) -> None:
+        for image_path in image_paths:
+            self.storage_service.delete_image(image_path)
+
+    def full_size_pixmap_for_image(self, image_path: Path):
+        return self.image_service.pixmap_for_image(image_path, size=None)
+
     def current_master_directory(self) -> Path:
         return self.settings_service.settings.current_master_directory
 

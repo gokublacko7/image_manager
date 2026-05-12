@@ -49,6 +49,15 @@ On this machine you can also double-click:
 run_app.bat
 ```
 
+Built Windows releases are generated with Nuitka under:
+
+```text
+release\onefile\ImageManager-OneFile.exe
+release\standalone\main.dist\ImageManager.exe
+```
+
+Use the whole `main.dist` folder for the dependency-folder build.
+
 ## Features
 
 - Import a folder of images into managed storage.
@@ -59,4 +68,6 @@ run_app.bat
 - Select one or more datasets and export them as a ZIP preserving one folder per dataset.
 - Choose and remember master dataset folders and a default export folder.
 - Show remaining disk space for the selected master folder.
+- Delete selected datasets or selected images from inside a dataset.
+- Open an image at full RGB size with previous/next navigation.
 - Uses RGB thumbnails for previews and loads thumbnails incrementally through a shared grid component.

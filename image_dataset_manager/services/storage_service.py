@@ -25,6 +25,10 @@ class StorageService:
         self.master_directory.mkdir(parents=True, exist_ok=True)
         return shutil.disk_usage(self.master_directory)
 
+    def disk_usage_for(self, directory: Path) -> shutil._ntuple_diskusage:
+        directory.mkdir(parents=True, exist_ok=True)
+        return shutil.disk_usage(directory)
+
     def import_dataset(self, source_folder: Path) -> Path:
         if not source_folder.exists() or not source_folder.is_dir():
             raise ValueError("Selected path is not a folder.")
@@ -34,6 +38,14 @@ class StorageService:
         destination = self._unique_destination(source_folder.name)
         shutil.copytree(source_folder, destination)
         return destination
+
+    def delete_dataset_folder(self, folder_path: Path) -> None:
+        if folder_path.exists():
+            shutil.rmtree(folder_path)
+
+    def delete_image(self, image_path: Path) -> None:
+        if image_path.exists():
+            image_path.unlink()
 
     def export_datasets(self, datasets: list[Dataset], zip_path: Path) -> None:
         if not datasets:
